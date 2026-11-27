@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Examen Express</title>
+<style>
+:root{--bg:#fafaf7;--card:#fff;--tx:#1d1d1b;--mut:#6b6b66;--ac:#4f46e5;--ac2:#eef0ff;--bd:#e3e3dc;--ok:#15803d;--bad:#b91c1c;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#17171a;--card:#202025;--tx:#f1f1ee;--mut:#a1a1a8;--ac:#8b86ff;--ac2:#2a2a45;--bd:#33333b;--ok:#4ade80;--bad:#f87171;color-scheme:dark}}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:720px;margin:0 auto;padding:16px}
+h1{font-size:1.5rem;margin:8px 0 2px}
+.sub{color:var(--mut);margin:0 0 14px}
+nav{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+nav button{flex:1 1 140px;padding:10px;border:1px solid var(--bd);background:var(--card);color:var(--tx);border-radius:10px;font:inherit;cursor:pointer}
+nav button.on{background:var(--ac);color:#fff;border-color:var(--ac)}
+section{display:none;background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:16px}
+section.on{display:block}
+h2{font-size:1.15rem;margin:0 0 10px}
+label{display:block;font-size:.9rem;color:var(--mut);margin:10px 0 4px}
+input,textarea{width:100%;padding:10px;border:1px solid var(--bd);border-radius:8px;background:var(--bg);color:var(--tx);font:inherit}
+textarea{min-height:90px}
+.btn{margin-top:12px;padding:10px 16px;border:0;border-radius:8px;background:var(--ac);color:#fff;font:inherit;cursor:pointer}
+.btn.alt{background:var(--ac2);color:var(--tx)}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+.row>*{flex:1 1 140px}
+.day{border:1px solid var(--bd);border-radius:10px;padding:10px;margin-top:8px}
+.day b{color:var(--ac)}
+.day label{display:flex;gap:8px;align-items:center;color:var(--tx);margin:4px 0;font-size:1rem}
+.day input{width:auto}
+.fc{border:1px dashed var(--ac);border-radius:12px;padding:24px 14px;margin-top:12px;text-align:center;min-height:110px;font-size:1.1rem;cursor:pointer;background:var(--ac2)}
+.big{font-size:2.2rem;font-weight:700;color:var(--ac)}
+.mut{color:var(--mut);font-size:.9rem}
+.ok{color:var(--ok)}.bad{color:var(--bad)}
+.item{display:flex;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid var(--bd);font-size:.95rem}
+.item button{border:0;background:none;color:var(--bad);cursor:pointer}
+</style>
+</head>
+<body>
+<main>
+<h1>Examen Express</h1>
+<p class="sub">Estudia menos tiempo y recuerda más.</p>
+<nav id="nav">
+<button data-t="plan" class="on">Planificador</button>
+<button data-t="cards">Flashcards</button>
+<button data-t="sim">Simulador</button>
+<button data-t="calc">¿Cuánto necesito?</button>
+</nav>
+
+<section id="plan" class="on">
+<h2>Planificador de estudio</h2>
+<label>Fecha del examen</label><input type="date" id="pDate">
+<label>Temas (uno por línea)</label><textarea id="pTopics" placeholder="Valor presente&#10;Tasa interna de retorno&#10;Riesgo y rendimiento"></textarea>
+<button class="btn" id="pGo">Generar plan</button>
+<div id="pOut"></div>
+</section>
+
+<section id="cards">
+<h2>Flashcards</h2>
+<div class="row"><div><label>Pregunta</label><input id="cQ"></div><div><label>Respuesta</label><input id="cA"></div></div>
+<button class="btn" id="cAdd">Agregar tarjeta</button>
+<div id="cList"></div>
+<hr style="border:0;border-top:1px solid var(--bd);margin:16px 0">
+<button class="btn alt" id="cStudy">Estudiar tarjetas</button>
+<div id="cStage"></div>
+</section>
+
+<section id="sim">
+<h2>Simulador de examen</h2>
+<p class="mut">Usa las tarjetas de la sección Flashcards como preguntas. Escribe tu respuesta, compárala y califícate con honestidad.</p>
+<label>Minutos disponibles</label><input type="number" id="sMin" value="5" min="1">
+<button class="btn" id="sGo">Iniciar simulacro</button>
+<div id="sStage"></div>
+</section>
+
+<section id="calc">
+<h2>¿Cuánto necesito sacar?</h2>
+<div class="row">
+<div><label>Puntos que ya llevas (de 100)</label><input type="number" id="kPts" value="45"></div>
+<div><label>Valor del examen (%)</label><input type="number" id="kW" value="40"></div>
+<div><label>Calificación mínima para pasar</label><input type="number" id="kMin" value="70"></div>
+</div>
+<button class="btn" id="kGo">Calcular</button>
+<div id="kOut"></div>
+</section>
+</main>
+<script>
+var $=function(i){return document.getElementById(i)};
+function load(k,d){try{var v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}}
+function save(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
+
+/* Navegación */
+document.querySelectorAll("#nav button").forEach(function(b){b.onclick=function(){
+document.querySelectorAll("#nav button").forEach(function(x){x.classList.toggle("on",x===b)});
+document.querySelectorAll("section").forEach(function(s){s.classList.toggle("on",s.id===b.dataset.t)});
+if(b.dataset.t==="cards")renderList();}});
+
+/* 1. Planificador */
+function plan(){
+var d=$("pDate").value,t=$("pTopics").value.split("\n").map(function(x){return x.trim()}).filter(Boolean);
+if(!d||!t.length){$("pOut").innerHTML='<p class="bad">Pon la fecha y al menos un tema.</p>';return}
+var today=new Date();today.setHours(0,0,0,0);
+var ex=new Date(d+"T00:00:00");
+var days=Math.round((ex-today)/864e5);
+if(days<1){$("pOut").innerHTML='<p class="bad">La fecha debe ser posterior a hoy.</p>';return}
+var study=days>1?days-1:1,rev=days>1;
+var per=Math.ceil(t.length/study),h="",i=0,n=0;
+h+='<p class="mut">Faltan <b>'+days+'</b> día(s). '+(rev?'El último día es de repaso general.':'Tienes un solo día: repasa todo.')+'</p>';
+for(var k=0;k<study;k++){
+var chunk=t.slice(i,i+per);i+=per;
+if(!chunk.length)break;
+var dt=new Date(today.getTime()+k*864e5);
+h+='<div class="day"><b>Día '+(k+1)+'</b> · '+dt.toLocaleDateString("es-MX",{weekday:"long",day:"numeric",month:"short"});
+chunk.forEach(function(x){n++;h+='<label><input type="checkbox"> '+esc(x)+'</label>'});
+h+='</div>'}
+if(rev)h+='<div class="day"><b>Día '+days+'</b> · Repaso general y simulacro</div>';
+$("pOut").innerHTML=h}
+$("pGo").onclick=plan;
+
+/* 2. Flashcards */
+var cards=load("cards",[
+{q:"¿Cuáles son las 4P’s de la mercadotecnia?",a:"Producto, precio, plaza y promoción."},
+{q:"¿Qué es una propuesta de valor?",a:"La promesa de beneficio que un producto ofrece a un usuario específico."},
+{q:"¿Qué mide el Product Performance?",a:"La efectividad, eficiencia, productividad o calidad de los resultados del usuario."}]);
+function renderList(){
+$("cList").innerHTML=cards.length?cards.map(function(c,i){return'<div class="item"><span>'+esc(c.q)+'</span><button data-i="'+i+'" aria-label="Eliminar">✕</button></div>'}).join(""):'<p class="mut">Aún no hay tarjetas.</p>';
+$("cList").querySelectorAll("button").forEach(function(b){b.onclick=function(){cards.splice(+b.dataset.i,1);save("cards",cards);renderList()}})}
+$("cAdd").onclick=function(){
+var q=$("cQ").value.trim(),a=$("cA").value.trim();if(!q||!a)return;
+cards.push({q:q,a:a});save("cards",cards);$("cQ").value="";$("cA").value="";renderList()};
+var sIdx=0,sQueue=[],sShow=false;
+function study(){
+if(!cards.length){$("cStage").innerHTML='<p class="mut">Agrega tarjetas primero.</p>';return}
+sQueue=cards.slice();sIdx=0;sShow=false;drawStudy()}
+function drawStudy(){
+if(!sQueue.length){$("cStage").innerHTML='<p class="ok">¡Terminaste! Ya dominas este grupo.</p>';return}
+var c=sQueue[0];
+$("cStage").innerHTML='<div class="fc" id="fc">'+esc(sShow?c.a:c.q)+'</div><p class="mut" style="text-align:center">'+(sShow?"Respuesta":"Toca la tarjeta para voltearla")+' · quedan '+sQueue.length+'</p>'+
+(sShow?'<div class="row"><button class="btn" id="yes">La sabía</button><button class="btn alt" id="no">Repasar</button></div>':'');
+$("fc").onclick=function(){sShow=!sShow;drawStudy()};
+if(sShow){$("yes").onclick=function(){sQueue.shift();sShow=false;drawStudy()};
+$("no").onclick=function(){sQueue.push(sQueue.shift());sShow=false;drawStudy()}}}
+$("cStudy").onclick=study;
+
+/* 3. Simulador */
+var S=null,tick=null;
+function fmt(s){var m=Math.floor(s/60),r=s%60;return m+":"+(r<10?"0":"")+r}
+function simStart(){
+if(!cards.length){$("sStage").innerHTML='<p class="bad">Necesitas tarjetas para simular.</p>';return}
+var m=Math.max(1,+$("sMin").value||5);
+S={q:cards.slice().sort(function(){return Math.random()-.5}),i:0,ok:0,left:m*60,total:m*60,rev:false};
+clearInterval(tick);
+tick=setInterval(function(){S.left--;var t=$("tm");if(t)t.textContent=fmt(Math.max(S.left,0));if(S.left<=0)simEnd()},1000);
+simDraw()}
+function simDraw(){
+if(S.i>=S.q.length){simEnd();return}
+var c=S.q[S.i];
+$("sStage").innerHTML='<p class="big" id="tm">'+fmt(S.left)+'</p><p class="mut">Pregunta '+(S.i+1)+' de '+S.q.length+'</p><div class="fc" style="cursor:default">'+esc(c.q)+'</div><label>Tu respuesta</label><textarea id="ans"></textarea>'+
+(S.rev?'<p><b>Respuesta correcta:</b> '+esc(c.a)+'</p><div class="row"><button class="btn" id="g">La acerté</button><button class="btn alt" id="w">Fallé</button></div>':'<button class="btn" id="sh">Ver respuesta</button>');
+if(S.rev){$("g").onclick=function(){next(1)};$("w").onclick=function(){next(0)}}
+else $("sh").onclick=function(){var a=$("ans").value;S.rev=true;simDraw();$("ans").value=a}}
+function next(ok){S.ok+=ok;S.i++;S.rev=false;simDraw()}
+function simEnd(){
+clearInterval(tick);
+var used=S.total-Math.max(S.left,0),n=S.i,pct=n?Math.round(S.ok/S.q.length*100):0;
+$("sStage").innerHTML='<h2>Resultado</h2><p class="big">'+pct+'%</p><p>'+S.ok+' aciertos de '+S.q.length+' preguntas · '+n+' contestadas · tiempo usado '+fmt(used)+'</p><button class="btn" id="again">Intentar otra vez</button>';
+$("again").onclick=simStart}
+$("sGo").onclick=simStart;
+
+/* 4. Calculadora */
+$("kGo").onclick=function(){
+var p=+$("kPts").value,w=+$("kW").value,m=+$("kMin").value,o=$("kOut");
+if(!(w>0)||w>100){o.innerHTML='<p class="bad">El valor del examen debe estar entre 1 y 100.</p>';return}
+var need=(m-p)/w*100;
+if(need<=0)o.innerHTML='<p class="ok">Ya pasaste con lo que llevas. Cualquier calificación te sirve.</p>';
+else if(need>100)o.innerHTML='<p class="bad">Necesitarías '+need.toFixed(1)+', más de 100. Con este examen no alcanza para llegar a '+m+'.</p>';
+else o.innerHTML='<p>Necesitas sacar al menos</p><p class="big">'+need.toFixed(1)+'</p><p class="mut">en el examen para llegar a '+m+' en total.</p>'};
+</script>
+</body>
+</html>
